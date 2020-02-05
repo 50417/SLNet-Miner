@@ -61,7 +61,6 @@ SLNet-Miner uses python +  sqlAlchemy for fast developing.
 #### Todos
 
  - Write Test case
- - Add MORE Preprocessors for mdl files
  - Exception Handling
 
 

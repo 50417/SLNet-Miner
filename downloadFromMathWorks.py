@@ -8,11 +8,13 @@ import os
 from datetime import datetime
 from zipfile import ZipFile
 from MathWorksRepoInfo import MathWorksRepoInfoController
+import sys
 
 logging.basicConfig(filename='mathworksfileexchange.log', filemode='a',
 					format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 					level=logging.INFO)
 
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 class MathWorksFECRepoDownload():
 	def __init__(self, url,dbname):
@@ -29,6 +31,7 @@ class MathWorksFECRepoDownload():
 		self.simulinkmodels_count = {}  # number of mdl or slx format
 		# Database
 		self.databaseHandler = MathWorksRepoInfoController(dbname)
+		self.max_version = 10 #Used while constructing URL . Version of the project.
 		# self.default_ns= "http://www.w3.org/2005/Atom"
 		# self.namespace= {
 		#                "openSearch" :"http://opensearch.a9.com/spec/opensearchrss/1.0/" ,
@@ -107,12 +110,12 @@ class MathWorksFECRepoDownload():
 					download_link = download_link.join(item.attrib['url'].split('/')[:-2])
 
 					if download_link.find("versions") > 0:
-						download_link = "https://www.mathworks.com" + download_link + "/1/download/zip"
+						download_link = "https://www.mathworks.com" + download_link + "/"+str(self.max_version)+"/download/zip"
 					elif download_link.find('mlc-downloads') > -1:
 						download_link = "https://www.mathworks.com" + download_link + "/packages/zip"
 					else:
 						download_link = "https://www.mathworks.com" + download_link + "/mlc-downloads/downloads/submissions/" + \
-										meta_data['id'].decode() + "/versions/1/download/zip"
+										meta_data['id'].decode() + "/versions/"+str(self.max_version)+"/download/zip"
 
 					meta_data["download_link"] = download_link
 					logging.info('Download Link :' + download_link)
@@ -174,16 +177,16 @@ class MathWorksFECRepoDownload():
 		'''
 		start_time = datetime.now()
 		logging.info('Start Time : ' + str(start_time))
-		print("Collecting Models Meta Data")
+		logging.info("Collecting Models Meta Data")
 		while (self.url != ''):
 			self.loadRSS(self.url)
 			self.url = self.parseXML()
 		self.savetoCSV('test.csv')
 		end_time = datetime.now()
 		logging.info('End Time : ' + str(end_time))
-		print("Time taken to collect Meta Data " + str(end_time - start_time))
+		logging.info("Time taken to collect Meta Data " + str(end_time - start_time))
 
-		print("Meta data collected for %s projects "%len(self.models_meta_data))
+		logging.info("Meta data collected for %s projects "%len(self.models_meta_data))
 		logging.info("Time taken to collect Meta Data " + str(end_time - start_time))
 		return self.models_meta_data
 
@@ -220,24 +223,29 @@ class MathWorksFECRepoDownload():
 			logging.info("Directory " + dir_name + " already exists")
 
 		for metadata in models_meta_data:
-			print("===============START %d==============="%self.counter)
+			logging.info("===============START %d==============="%self.counter)
 			self.counter+=1
 			fileName_csv =''
 			unique_file_name = str(metadata['id'].decode())
-			print("Checking if the file %s is already downloaded " %metadata['title'])
+			logging.info("Checking if the file %s is already downloaded " %metadata['title'])
 			if os.path.isfile(os.path.join(os.getcwd(),dir_name, unique_file_name + ".zip")):
-				print("File already exists")
+				logging.info("File already exists")
 				logging.info("File %s already exists" %unique_file_name)
 				continue
 
-			print("Downloading %s : " % metadata['title'])
+			logging.info("Downloading %s : " % metadata['title'])
 			logging.info("Downloading %s : " % metadata['title'])
 			# download  file
 			response = requests.get(metadata['download_link'])
-			if response.status_code == 404:
-				print("Download Fail. Trying alternative Url: ")
-				response = requests.get(metadata['download_link'].replace('1', '2'))
-				logging.info("Downloading from URL : %s" % (metadata['download_link']).replace('1', '2'))
+			if response.status_code != 200:
+				tmpcount = self.max_version #Version  of the projects
+				while response.status_code != 200 and tmpcount <= 10 and tmpcount>0:
+					tmpcount -= 1
+					logging.info("Download Fail. Trying alternative Url: ")
+					alternative_download_link = (metadata['download_link']).replace('/10/', '/' + str(
+						tmpcount) + '/')
+					logging.info("Downloading from URL : %s" % alternative_download_link)
+					response = requests.get(alternative_download_link)
 			else:
 				logging.info("Downloading from URL : %s" % (metadata['download_link']))
 
@@ -254,7 +262,7 @@ class MathWorksFECRepoDownload():
 		end_time = datetime.now()
 		logging.info('End Time : ' + str(end_time))
 		logging.info("Number of File that couldn't be downloaded  : %s" %(self.cannot_download_count))
-		print("Time taken to download file " + str(end_time - start_time))
+		logging.info("Time taken to download file " + str(end_time - start_time))
 		self.printDict()
 
 
@@ -299,7 +307,7 @@ class MathWorksFECRepoDownload():
 						with zipObj.open(fileName) as f:
 							return f.read()
 		os.remove(file)
-		print("Deleted  File: %s as it has no license file" % (file))
+		logging.info("Deleted  File: %s as it has no license file" % (file))
 		logging.info("Deleted  File: %s as it has no license file" % (file))
 		return "N/A"
 
@@ -334,14 +342,13 @@ class MathWorksFECRepoDownload():
 				else:
 					# self.update_model_file_info_in_db(repo.id, {"has_model_files": 0})
 					os.remove(file)
-					print("Deleted %s as it does not contain mdl or slx file or license File" % file)
 					logging.info("Deleted %s as it does not contain mdl or slx file or license File" % file)
 					return ""
 		except Exception:
 			logging.exception(Exception)
 			self.cannot_download_count += 1
 			os.remove(file)
-			print("Deleted  bad File: %s" % (file))
+			logging.info("Deleted  bad File: %s" % (file))
 			return ""
 
 	def printDict(self):
@@ -355,6 +362,9 @@ if __name__ == "__main__":
 	directory = "dir_to_download"
 	dbname = "xyz"
 	rss_url = 'https://www.mathworks.com/matlabcentral/fileexchange/feed?product_family%5B%5D=simulink&type%5B%5D=models'
+	# rss_url = 'https://www.mathworks.com/matlabcentral/fileexchange/feed?source%5B%5D=community&type%5B%5D=models'
+	# rss_url = 'https://www.mathworks.com/matlabcentral/fileexchange/feed?category%5B%5D=215'
+
 	# calling main function
 	tmp = MathWorksFECRepoDownload(rss_url
 		,dbname)

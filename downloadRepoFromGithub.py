@@ -12,11 +12,11 @@ from zipfile import ZipFile
 import datetime
 import logging
 from Simulinkrepoinfo import SimulinkRepoInfoController
-
+import sys
 logging.basicConfig(filename='github.log', filemode='a', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 					level=logging.INFO)
 
-
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 class GithubRepoDownload():
 	githubURL = "https://github.com"
@@ -46,7 +46,6 @@ class GithubRepoDownload():
 
 	def getDownloadLink(self, repo):
 		logging.info("Downloading repository '%s' from user '%s' ..." % (repo.name, repo.owner.login))
-		print("Downloading repository '%s' from user '%s' ..." % (repo.name, repo.owner.login))
 		linkToDownloadRepo = GithubRepoDownload.githubURL + "/" + \
 							 repo.owner.login + "/" + repo.name + "/" + "archive" + "/" + "master.zip"
 		return linkToDownloadRepo
@@ -71,7 +70,6 @@ class GithubRepoDownload():
 			output.write(response.content)
 			output.close()
 		except Exception as e:
-			print("Saving to disk Failed")
 			logging.info("Saving to disk Failed")
 			logging.info(e)
 			return False
@@ -111,7 +109,6 @@ class GithubRepoDownload():
 			for repo in repositories:
 
 				self.counter  += 1
-				print("Search Result #%d: %s" % (self.counter, repo.name))
 				logging.info("Search Result #%d: %s" %(self.counter, repo.name))
 				if (repo.id in ( 157107577,203254778,227433411,43843825)): #project ID of  SLEMI, CYEMI's slearner, SLFORGE:
 					logging.info("Skipping Known research projects")
@@ -129,7 +126,7 @@ class GithubRepoDownload():
 				license_type = ""
 
 				if os.path.isfile(filename_with_path):
-					print("File %s already exists" % repo.name +"__"+ str(repo.id))
+					logging.info("File %s already exists" % repo.name +"__"+ str(repo.id))
 					continue
 				try:
 					license_type = repo.get_license().license.name
@@ -139,7 +136,6 @@ class GithubRepoDownload():
 					#Skipping the repository since it doesnot have License
 					if self.l_flag == True:
 						self.skipped_counter_license += 1
-						print("Skipping the repository : %s since it does not have License" %repo.name)
 						logging.info("Skipping the repository : %s since it does not have License" %repo.name)
 						continue
 					logging.info(e)
@@ -209,19 +205,18 @@ class GithubRepoDownload():
 					self.skipped_counter_other_error += 1
 					#self.update_model_file_info_in_db(repo.id, {"has_model_files": 0})
 					os.remove(file)
-					print("No Model Files : Deleting %s"%file)
 					logging.info("No Model Files : Deleting %s" % file)
 					return 0,""
 		except Exception as e:
 			os.remove(file)
 			logging.info(e)
-			print("Deleted  BAD File %s" %(file))
+			logging.info("Deleted  BAD File %s" %(file))
 			return  0, ""
 
 	def printDict(self):
 		sum = 0
 		for k, v in self.simulinkmodels_count.items():
-			print(k + " : ", str(v))
+			logging.info(k + " : ", str(v))
 			sum = sum + v
 		logging.info("Total Simulink models : " + str(sum))
 		logging.info("Total Skipped Known : %d"%self.skipped_counter_known)
@@ -265,7 +260,8 @@ parser.add_argument('-db', '--dbname', dest="db_name", type=str,
 					help='Name of sqlite database to store metadata files ')
 parser.add_argument('-flag', '--license', dest="l_flag", type=bool,
 					help='Boolean value to determine to include only those project with license| Dont include the file if downloading all projects')
-
+parser.add_argument("-t", '--token', dest="token", type=str,
+					help = 'https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line')
 args = parser.parse_args()
 
 query = args.query

@@ -10,7 +10,7 @@ class MathWorksRepoInfo(Base):
 	model class for MathWorks File Exchange Repo Info
 
 	'''
-	__tablename__ = "MathWorks_Simulink_Models"
+	__tablename__ = "MATC_Projects"
 	id = Column('id', Integer, primary_key=True)
 	repo_name = Column('title', String)
 	owner = Column('author_name', String)

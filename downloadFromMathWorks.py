@@ -256,7 +256,7 @@ class MathWorksFECRepoDownload():
 				license_content = self.checkIfProjecthasLicense(unique_file_name, dir_name)
 				if license_content == "N/A":
 					continue
-				self.write_to_database(metadata, license_content,fileName_csv,len(fileName_csv.split(",")))#, has_license = 1 if license_content != "N/A" else 0)
+				self.write_to_database(metadata, license_content,fileName_csv,len(fileName_csv.split(","))-1)#, has_license = 1 if license_content != "N/A" else 0)
 
 
 		end_time = datetime.now()

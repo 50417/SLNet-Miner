@@ -13,6 +13,7 @@ import datetime
 import logging
 from Simulinkrepoinfo import SimulinkRepoInfoController
 import sys
+import time
 logging.basicConfig(filename='github.log', filemode='a', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 					level=logging.INFO)
 
@@ -58,7 +59,7 @@ class GithubRepoDownload():
 		'''
 		results = self.gObj.search_repositories(query, sort='updated')
 		#self.gObj.search_commits()
-		logging.info("Total Search Results for %s query : %s " % (str(results.totalCount), query))
+		logging.info("Total Search Results for %s query : %s " % ( query,str(results.totalCount)))
 		return results
 
 	def saveZipFile(self, response, filename_with_path):
@@ -94,11 +95,11 @@ class GithubRepoDownload():
 		latest_date = prev_date + interval
 		logging.info("Latest Date : " + str(latest_date))
 		tmp = query
-		query = tmp + "+created:" + str(prev_date) + ".." + str(latest_date)
+		query = tmp + " created:" + str(prev_date) + ".." + str(latest_date)
 
 		repositories = self.getRepositoryFromAPI(query)
 
-		self.counter = 1
+		self.counter = 0
 		self.skipped_counter_known = 0
 		self.skipped_counter_license = 0
 		self.skipped_counter_other_error = 0
@@ -164,9 +165,12 @@ class GithubRepoDownload():
 					else:
 						self.skipped_counter_no_mdl += 1
 			#TODO TimeOut
+			logging.info("================Sleeping for 60 Seconds============")
+			time.sleep(60)
+
 			prev_date = prev_date + interval
 			latest_date = latest_date + interval
-			query = tmp + "+created:" + str(prev_date) + ".." + str(latest_date)
+			query = tmp + " created:" + str(prev_date) + ".." + str(latest_date)
 			repositories = self.getRepositoryFromAPI(query)
 
 	def checkIfProjecthasSimulinkModel(self, repo):

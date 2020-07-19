@@ -42,6 +42,8 @@ class SimulinkRepoInfo(Base):
 	license_type = Column('license', String)
 	model_files = Column('model_files', String)
 	num_model_file = Column('num_model_file',Integer)
+	version_sha = Column('version_sha', String)
+
 	def __init__(self, id, repo_name, owner, is_private ,
 				 html_github_url, description, is_forked, api_url,
 				 created_at, updated_at, pushed_at,
@@ -49,7 +51,7 @@ class SimulinkRepoInfo(Base):
 				 stargazers_count, watchers_count,language,forks_count,
 				 open_issues_count , master_branch, default_branch,
 				 topics,license_type,
-			     model_files,num_model_file):
+			     model_files,num_model_file,version_sha):
 		self.id = id
 		self.repo_name=repo_name
 		self.owner = owner
@@ -86,7 +88,7 @@ class SimulinkRepoInfo(Base):
 		#self.has_model_files = has_model_files
 		self.model_files = model_files
 		self.num_model_file = num_model_file
-
+		self.version_sha = version_sha
 
 
 
@@ -106,7 +108,7 @@ class SimulinkRepoInfoController(object):
 				 stargazers_count, watchers_count,language,forks_count,
 				 open_issues_count , master_branch, default_branch,
 				 topics,license_type,
-			     model_files,num_model_file):
+			     model_files,num_model_file,version_sha):
 		'''
 		creates a session and object to insert the values
 		need to implement error handling
@@ -134,7 +136,7 @@ class SimulinkRepoInfoController(object):
 				 stargazers_count, watchers_count,language,forks_count,
 				 open_issues_count , master_branch, default_branch,
 				 topics,license_type,
-			     model_files,num_model_file)
+			     model_files,num_model_file,version_sha)
 		session.add(tmpSimulinkRepoInfo)
 		session.commit()
 		session.close()

@@ -14,6 +14,7 @@ import logging
 from Simulinkrepoinfo import SimulinkRepoInfoController
 import sys
 import time
+from subprocess import Popen, PIPE
 logging.basicConfig(filename='github.log', filemode='a', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 					level=logging.INFO)
 
@@ -79,6 +80,13 @@ class GithubRepoDownload():
 	def getQueryDates(self, startDate):
 		return startDate
 
+	def get_version_sha(self,repo):
+		repoLink = GithubRepoDownload.githubURL + "/" + \
+							 repo.owner.login + "/" + repo.name + ".git"
+		p = Popen(['git', 'ls-remote', repoLink, '|', 'grep', 'refs/heads/master'], stdout=PIPE)
+		output = p.communicate()[0].decode("utf-8")
+		return output.split("\t")[0]
+
 	def downloadAllRepository(self, query):
 		'''
 		Download the repositories
@@ -143,7 +151,8 @@ class GithubRepoDownload():
 
 
 
-				# download  file
+				# getting sha and download file
+				version_sha = self.get_version_sha(repo)
 				response = requests.get(download_url)
 				# DONE # Writing to Database using SQL ALChemy
 				# INFO to store :
@@ -160,11 +169,10 @@ class GithubRepoDownload():
 					# Check and Delete
 					model_file_count,model_file_names = self.checkIfProjecthasSimulinkModel(repo)
 					if model_file_count>0:
-						self.write_to_database(repo, license_type,model_file_count,model_file_names)
+						self.write_to_database(repo, license_type,model_file_count,model_file_names,version_sha)
 						self.download_counter += 1
 					else:
 						self.skipped_counter_no_mdl += 1
-			#TODO TimeOut
 			logging.info("================Sleeping for 60 Seconds============")
 			time.sleep(60)
 
@@ -230,7 +238,7 @@ class GithubRepoDownload():
 		logging.info("Total Downloaded : %d"%self.download_counter)
 		logging.info("Total Search Results : %d" % self.counter)
 
-	def write_to_database(self, repo,license_type,no_of_model_file, model_file_csv):
+	def write_to_database(self, repo,license_type,no_of_model_file, model_file_csv,version_sha):
 		'''
 		Insert into Database
 		:param repo:
@@ -247,7 +255,7 @@ class GithubRepoDownload():
 									repo.homepage, repo.size,
 									repo.stargazers_count, repo.watchers_count, repo.language,repo.forks_count,
 			   						repo.open_issues_count, repo.master_branch, repo.default_branch,
-									topic,license_type, model_file_csv, no_of_model_file)
+									topic,license_type, model_file_csv, no_of_model_file,version_sha)
 
 
 

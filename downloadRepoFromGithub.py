@@ -205,8 +205,7 @@ class GithubRepoDownload():
 						count = count + 1
 						fileName_csv=fileName+","+fileName_csv
 
-
-
+				zipObj.close()
 				if count > 0:
 					self.simulinkmodels_count[projectname] = count
 					#self.update_model_file_info_in_db(repo.id,{"model_files":fileName_csv})
